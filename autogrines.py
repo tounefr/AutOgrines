@@ -72,7 +72,7 @@ __time_start__ = time.time()
 __waitimeInSeconds__ = 1
 
 # Version
-__version__ = "141014.01"
+__version__ = "141015.01"
 
 # debug mode
 __DEBUG__ = False
@@ -80,6 +80,9 @@ __DEBUG__ = False
 # Variable pour les requêtes persistentes
 __sess__ = requests.Session()
 __sess__.headers["User-Agent"] = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.101 Safari/537.36"
+cert ='cacert.pem'
+# or os.environ['REQUESTS_CA_BUNDLE'] = cert 
+os.environ['REQUESTS_CA_BUNDLE'] = os.path.join(os.getcwd(), cert)
 
 def getDateNow():
     return time.strftime("%H:%M:%S")
@@ -100,7 +103,7 @@ def warning(text):
 # Message d'erreur qui arrête le programme
 def error(text):
     print(getDateNow() + " [FATAL ERROR] " + text)
-    sys.exit(-1)
+    #sys.exit(-1)
 
 # Procédure d'identification
 def identification(login, password):
@@ -114,7 +117,7 @@ def identification(login, password):
       "remember" : 1
     }
     try:
-        req = __sess__.post("https://account.ankama.com/sso", data=postDatas);
+        req = __sess__.post("https://account.ankama.com/sso", data=postDatas, cert="cacert.pem");
         if req.history[0].headers["Location"] == "https://secure.dofus.com/fr/achat-bourses-kamas-ogrines/identification#loginfailed=failed":
             return False
     except IndexError:
@@ -125,7 +128,7 @@ def identification(login, password):
 # Après être identifié, on choisit le serveur par son id
 def choose_server(id_serv):
     try:
-        req = __sess__.post("https://secure.dofus.com/fr/achat-bourses-kamas-ogrines/selection-serveur", data={"serverid" : id_serv})
+        req = __sess__.post("https://secure.dofus.com/fr/achat-bourses-kamas-ogrines/selection-serveur", data={"serverid" : id_serv}, cert="cacert.pem")
         if req.history[0].headers["Location"] == "https://secure.dofus.com/fr/achat-bourses-kamas-ogrines/0-francaise":
             return req.text
     except IndexError:
@@ -136,7 +139,7 @@ def choose_server(id_serv):
 
 # Récupère le nombre d'offres d'ogrines disponible
 def checkOffers():
-    req = __sess__.get("https://secure.dofus.com/fr/achat-bourses-kamas-ogrines/0-francaise")
+    req = __sess__.get("https://secure.dofus.com/fr/achat-bourses-kamas-ogrines/0-francaise", cert="cacert.pem")
     check_form = re.search("\<input\ type\=\'hidden\'\ name\=\'check_form\'\ value\=\'(.*)\'\ \/\>", req.text).group(1)
     offersUnparsed = re.search("MarketPlace\.ActiveBid\((.*)\)\;", req.text).group(1)
     offersParsed = json.loads(offersUnparsed)
@@ -156,7 +159,7 @@ def buyOgrines(check_form, nbrOgrines, offer):
         'search' : nbrOgrines,
         'give' : int(offer['rate']) * nbrOgrines
     }
-    req = __sess__.post("https://secure.dofus.com/fr/achat-bourses-kamas-ogrines/0-francaise/achat-ogrines/acheter", data=postDatas)
+    req = __sess__.post("https://secure.dofus.com/fr/achat-bourses-kamas-ogrines/0-francaise/achat-ogrines/acheter", data=postDatas, cert="cacert.pem")
     postDatas = {
         'postback' : 1,
         'confirm' : 1,
@@ -167,7 +170,7 @@ def buyOgrines(check_form, nbrOgrines, offer):
         'server' : __server_id__
     }
 
-    req = __sess__.post("https://secure.dofus.com/fr/achat-bourses-kamas-ogrines/0-francaise/achat-ogrines/acheter", data=postDatas)
+    req = __sess__.post("https://secure.dofus.com/fr/achat-bourses-kamas-ogrines/0-francaise/achat-ogrines/acheter", data=postDatas, cert="cacert.pem")
 
     if re.match("Les ogrines ont été crédités sur votre compte", req.text):
         return True
@@ -212,21 +215,20 @@ def main():
     if __dofus_password__ is None:
         __dofus_password__ = input("Entrez votre mot de passe : ")
     if __cost_min_ogrine__ is None:
-        __cost_min_ogrine__ = int(input("Entrez le prix minimum d'un ogrine à acheter : "))
+        __cost_min_ogrine__ = int(input("Entrez le prix minimum d'un ogrine a acheter : "))
     if __cost_max_ogrine__ is None:
-        __cost_max_ogrine__ = int(input("Entrez le prix maximum d'un ogrine à acheter : "))
+        __cost_max_ogrine__ = int(input("Entrez le prix maximum d'un ogrine a acheter : "))
     if __max_ogrines__ is None:
-        __max_ogrines__ = int(input("Entrez le nombre maximum d'ogrines à acheter : "))
+        __max_ogrines__ = int(input("Entrez le nombre maximum d'ogrines a acheter : "))
 
     if __server_id__ is None:
         for k,v in __dofus__servers__.items():
             print(v + ". " + k)
         __server_id__ = int(input("\nEntrez l'id de votre serveur : "))
+        print("")
     
-    try:
-        startAutogrines()
-    except requests.exceptions.ConnectionError:
-        error("Erreur de connexion internet")
+    startAutogrines()
+    input("")
 
 # Temps écoulé depuis le lancement de Autogrines
 def timeLeft():
@@ -239,31 +241,25 @@ def startAutogrines():
     
     try:
         if(identification(__dofus_account__, __dofus_password__)):
-            info("Vous êtes connecté !")
+            info("Vous etes connecte !")
         else:
             error("Le nom de compte et/ou le mot de passe est incorrect !")
             return
 
         responseChooseServer = choose_server(__server_id__)
         if type(responseChooseServer) is str:    
-            info("Vous avez choisis le serveur : " + str(__dofus__servers__[str(__server_id__)]))
+            info("Vous avez choisis le serveur : " + str(__dofus__servers__[str(__server_id__)]) + "\n")
         else:
-            error("Impossible de choisir un serveur !")
+            error("Impossible de choisir un serveur !\n")
             return
-
+        
         crtTime = 30
         purchases = []
         
-        while True:
+        while __total_ogrines_bought__ < __max_ogrines__:
             offers = checkOffers()
             nbrOffersAvailable = len(offers['offers'])
-
-            # on affiche un message à l'écran toutes les 30 secondes
-            if int(time.time()) - int(crtTime) >= 30:
-                info("[ Nbr offres : {} ] - [ Prix min ogrine : {} ] - [ Prix max ogrine : {} ] - [ Nbr ogrines acheté : {}/{} ] - [ Kamas dépensés : {} ] - [ Prix actuel ogrine : {} ]".format(
-                    nbrOffersAvailable, __cost_min_ogrine__, __cost_max_ogrine__, __total_ogrines_bought__, __max_ogrines__, __total_kamas__, offers['offers'][0]['rate']))
-                crtTime = time.time()
-
+			
             if nbrOffersAvailable > 0:
                 for offer in offers['offers']:
                     nbrOgrinesLeft = __max_ogrines__ - __total_ogrines_bought__
@@ -273,36 +269,34 @@ def startAutogrines():
                         # vérifie qu'on a pas déjà tout acheté
                         if __total_ogrines_bought__ < __max_ogrines__:
                             if int(offer['sum']) < nbrOgrinesLeft:
-                                #buyOgrines(offers['check_form'], offer['sum'], offer)
+                                #buyOgrines(offers['check_form'], int(offer['sum']), offer)
                                 __total_ogrines_bought__ = __total_ogrines_bought__ + int(offer['sum'])
                                 ogrinesBought = offer['sum']
-                                kamasBought = int(offer['sum'])
+                                nbrKamas = int(offer['rate']) * int(offer['sum'])
                                 
                             else:
                                 #buyOgrines(offers['check_form'], nbrOgrinesLeft, offer)
                                 __total_ogrines_bought__ = __total_ogrines_bought__ + nbrOgrinesLeft
-                                kamasBought = nbrOgrinesLeft
+                                nbrKamas = int(offer['rate']) * nbrOgrinesLeft
                                 ogrinesBought = nbrOgrinesLeft
 
                             purchases.append({
                                 'time' : getDateNow(),
                                 'ogrines' : ogrinesBought,
-                                'kamas' : kamasBought
+                                'kamas' : nbrKamas
                             })
-                            __total_kamas__ = __total_kamas__ + kamasBought
-                            nbrKamas = int(offer['rate']) * int(offer['sum'])
+                            __total_kamas__ = __total_kamas__ + nbrKamas
                             
-                            
-                            info("Vous venez d'acheter " + str(kamasBought) + " ogrines pour " + str(nbrKamas) + " kamas (" + str(offer['rate']) + "kamas /u)")
+                            info("Achat " + str(ogrinesBought) + " ogrines pour " + str(nbrKamas) + " kamas (" + str(offer['rate']) + "kamas/u)")
                         else:
                             info("Vous avez acheter tous les ogrines.")
                             print("\n\n")
                             if len(purchases) > 0:
-                                info("Résumé des achats :")
+                                info("Resume des achats :")
                                 for purchase in purchases:
                                     info("Date : " + str(purchase['time']) + " Nbr ogrines : " + str(purchase['ogrines']) + " Nbr Kamas : " + str(purchase['kamas']))
-                                print(timeLeft() + " secondes écoulées") 
-                            sys.exit(0)
+                                print("\n\n" + timeLeft() + " secondes ecoulees")
+                                break
             else:
                 debug("Aucune offres disponible.")
             time.sleep(__waitimeInSeconds__)
@@ -311,14 +305,12 @@ def startAutogrines():
     except KeyboardInterrupt:
         print("\n\n")
         if len(purchases) > 0:
-            info("Résumé des achats :")
+            info("Resume des achats :")
             for purchase in purchases:
                 info("Date : " + str(purchase['time']) + " Nbr ogrines : " + str(purchase['ogrines']) + " Nbr Kamas : " + str(purchase['kamas']))
                 
-        print("\n")
-        print(timeLeft() + " secondes écoulées")            
+        print("\n\n" + timeLeft() + " secondes ecoulees")            
         print("ByeBye")
     
 if __name__ == "__main__":
     main()
-    input("")
