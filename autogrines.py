@@ -264,18 +264,28 @@ def startAutogrines():
                 for offer in offers['offers']:
                     nbrOgrinesLeft = __max_ogrines__ - __total_ogrines_bought__
 
+                    if (int(time.time()) - crtTime) >= 30:
+                        print("")
+                        info("Nbr offres : {}".format(nbrOffersAvailable))
+                        info("Cout min ogrine : {}".format(__cost_min_ogrine__))
+                        info("Cout max ogrine : {}".format(__cost_max_ogrine__))
+                        info("Nbr ogrines {}/{}".format(__total_ogrines_bought__, __max_ogrines__))
+                        info("Cout actuel ogrine : {}".format(offers['offers'][0]['rate']))
+                        print("")
+                        crtTime = time.time()
+                    
                     # vérifie le prix de l'ogrine
                     if int(offer['rate']) <= __cost_max_ogrine__ and int(offer['rate']) >= __cost_min_ogrine__:
                         # vérifie qu'on a pas déjà tout acheté
                         if __total_ogrines_bought__ < __max_ogrines__:
                             if int(offer['sum']) < nbrOgrinesLeft:
-                                #buyOgrines(offers['check_form'], int(offer['sum']), offer)
+                                buyOgrines(offers['check_form'], int(offer['sum']), offer)
                                 __total_ogrines_bought__ = __total_ogrines_bought__ + int(offer['sum'])
                                 ogrinesBought = offer['sum']
                                 nbrKamas = int(offer['rate']) * int(offer['sum'])
                                 
                             else:
-                                #buyOgrines(offers['check_form'], nbrOgrinesLeft, offer)
+                                buyOgrines(offers['check_form'], nbrOgrinesLeft, offer)
                                 __total_ogrines_bought__ = __total_ogrines_bought__ + nbrOgrinesLeft
                                 nbrKamas = int(offer['rate']) * nbrOgrinesLeft
                                 ogrinesBought = nbrOgrinesLeft
