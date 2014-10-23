@@ -1,5 +1,5 @@
 AutOgrines
 ==========
 
-AutOgrines est un utilitaire permettant d'acheter des ogrines sur le jeu Dofus 2 automatiquement.  
-Vous fixez un prix maximum/minimum, le nombre d'ogrine maximum à acheter et le logiciel se charge du reste.
+Autogrines est un petit programme qui permet d'acheter automatiquement des "Ogrines" sur le jeu Dofus 2 au prix minimum et maximum donné.  
+Il permet aussi d'abonner automatiquement son compte ainsi que de le certifier si le compte ne l'est pas.  
